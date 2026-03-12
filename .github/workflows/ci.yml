@@ -1,0 +1,88 @@
+name: MeshBrain CI
+
+on:
+  push:
+    branches: [ main, dev ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test-python:
+    name: Python Blockchain Tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+
+      - name: Run full test suite (34 blockchain tests)
+        run: |
+          cd meshbrain
+          python mesh_test.py
+
+      - name: Run node demo (smoke test)
+        run: |
+          cd meshbrain
+          timeout 15 python node.py --demo || true
+
+  lint-python:
+    name: Python Lint
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install linters
+        run: pip install flake8
+
+      - name: Lint
+        run: |
+          flake8 meshbrain/ \
+            --max-line-length=100 \
+            --exclude=__pycache__,*.pyc \
+            --ignore=E501,W503,E302,E303
+
+  build-android:
+    name: Android Build Check
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Make gradlew executable
+        run: chmod +x meshbrain_android/gradlew
+
+      - name: Build debug APK
+        run: |
+          cd meshbrain_android
+          ./gradlew assembleDebug --no-daemon
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: meshbrain-debug.apk
+          path: meshbrain_android/app/build/outputs/apk/debug/app-debug.apk

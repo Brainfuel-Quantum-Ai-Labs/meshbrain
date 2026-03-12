@@ -1,0 +1,83 @@
+name: Build MeshBrain APK
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:   # allows manual trigger from GitHub UI
+
+jobs:
+  build-apk:
+    name: Build Debug APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: '17'
+          distribution: 'temurin'
+          cache: gradle
+
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+
+      - name: Accept Android licenses
+        run: yes | sdkmanager --licenses || true
+
+      - name: Grant gradlew permission
+        run: chmod +x meshbrain_android/gradlew
+
+      - name: Cache Gradle packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+          key: gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+          restore-keys: gradle-
+
+      - name: Build Debug APK
+        run: |
+          cd meshbrain_android
+          ./gradlew assembleDebug --no-daemon --stacktrace
+
+      - name: Upload APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: MeshBrain-debug
+          path: meshbrain_android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 30
+
+      - name: Get APK size
+        run: |
+          APK_PATH="meshbrain_android/app/build/outputs/apk/debug/app-debug.apk"
+          if [ -f "$APK_PATH" ]; then
+            SIZE=$(du -sh "$APK_PATH" | cut -f1)
+            echo "✅ APK built successfully! Size: $SIZE"
+          fi
+
+  run-python-tests:
+    name: Python Blockchain Tests (34/34)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Run blockchain verification tests
+        run: |
+          cd meshbrain
+          python mesh_test.py
