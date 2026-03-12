@@ -1,0 +1,25 @@
+# MeshBrain Python Node — Dependencies
+# Install: pip install -r requirements.txt
+
+# Async web framework + WebSocket server
+aiohttp>=3.9.0
+aiohttp[speedups]
+
+# WebSocket support
+websockets>=12.0
+
+# Cryptography — Ed25519 signing/verification
+cryptography>=41.0.0
+
+# Numerical computing — knowledge vectors
+numpy>=1.26.0
+
+# HTTP requests (sync fallback)
+requests>=2.31.0
+
+# FastAPI (optional — for REST API endpoint)
+fastapi>=0.109.0
+uvicorn>=0.27.0
+
+# Data validation
+pydantic>=2.5.0

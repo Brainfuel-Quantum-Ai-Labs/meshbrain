@@ -1,0 +1,56 @@
+# MeshBrain .gitignore
+
+# ── Node identity (private keys — NEVER commit) ──────────────
+**/node_identity/
+**/bridge_identity/
+**/demo_node_*/
+**/*_identity/private.pem
+**/private.pem
+
+# ── Python ────────────────────────────────────────────────────
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+.env
+.venv
+env/
+venv/
+ENV/
+*.egg-info/
+dist/
+build/
+.pytest_cache/
+.mypy_cache/
+
+# ── Android / Gradle ──────────────────────────────────────────
+meshbrain_android/.gradle/
+meshbrain_android/build/
+meshbrain_android/app/build/
+meshbrain_android/local.properties
+meshbrain_android/*.iml
+meshbrain_android/**/*.iml
+.idea/
+*.apk
+*.aab
+
+# ── OS ────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ── Editor ────────────────────────────────────────────────────
+.vscode/
+*.swp
+*.swo
+
+# ── Model files (too large for git) ──────────────────────────
+*.gguf
+*.bin
+*.safetensors
+models/
+
+# ── Logs ──────────────────────────────────────────────────────
+*.log
+logs/
