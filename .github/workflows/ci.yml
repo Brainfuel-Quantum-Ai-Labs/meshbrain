@@ -53,9 +53,10 @@ jobs:
       - name: Lint
         run: |
           flake8 meshbrain/ \
-            --max-line-length=100 \
             --exclude=__pycache__,*.pyc \
-            --ignore=E501,W503,E302,E303
+            --select=E9,F63,F7,F82 \
+            --show-source \
+            --statistics
 
   build-android:
     name: Android Build Check

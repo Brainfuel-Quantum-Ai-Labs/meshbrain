@@ -11,14 +11,14 @@ setup(
     python_requires=">=3.10",
     packages=find_packages(),
     install_requires=[
-        "aiohttp>=3.9.0",
-        "websockets>=12.0",
-        "cryptography>=41.0.0",
-        "numpy>=1.26.0",
-        "requests>=2.31.0",
-        "fastapi>=0.109.0",
-        "uvicorn>=0.27.0",
-        "pydantic>=2.5.0",
+        "aiohttp>=3.14.0",
+        "websockets>=16.0",
+        "cryptography>=41.0.7",
+        "numpy>=2.0.0",
+        "requests>=2.32.0",
+        "fastapi>=0.139.0",
+        "uvicorn>=0.35.0",
+        "pydantic>=2.13.0",
     ],
     entry_points={
         "console_scripts": [

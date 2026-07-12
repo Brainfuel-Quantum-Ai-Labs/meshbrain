@@ -12,6 +12,7 @@ import time
 import struct
 import hashlib
 import zlib
+import re
 from dataclasses import dataclass, field
 from typing import Optional
 import numpy as np
@@ -165,31 +166,63 @@ class NanoPacket:
     def _compress_knowledge(query: str, response: str) -> bytes:
         """
         Compress query+response into a knowledge vector.
-        
-        In production: this would be a LoRA gradient delta (~50KB).
-        In this prototype: we use a simple TF-IDF-style bag-of-words
-        embedding that captures semantic meaning without storing raw text.
-        
+
+        This uses multi-resolution feature hashing:
+        - unigram and bigram lexical features
+        - character trigram features (robust to typos/word variants)
+        - signed hashing to reduce collision bias
+        - adaptive differential privacy noise before quantization
+
         PRIVACY: this vector cannot practically be reversed to recover
-        the original text (especially with the differential privacy noise below).
+        the original text.
         """
-        combined = f"{query} {response}"
-        words = combined.lower().split()
+        dimension = 256
+        combined = f"{query} {response}".lower()
+        words = re.findall(r"[a-z0-9']+", combined)
 
-        # Simple word-frequency vector over a 256-dim vocabulary hash space
-        vec = np.zeros(256, dtype=np.float32)
-        for word in words:
-            idx = int(hashlib.md5(word.encode()).hexdigest()[:4], 16) % 256
-            vec[idx] += 1.0
+        vec = np.zeros(dimension, dtype=np.float32)
 
-        # Normalize
-        norm = np.linalg.norm(vec)
-        if norm > 0:
+        def _signed_hash(feature: str) -> tuple[int, float]:
+            h = int.from_bytes(
+                hashlib.blake2b(feature.encode("utf-8"), digest_size=8).digest(),
+                "big"
+            )
+            idx = h % dimension
+            sign = 1.0 if ((h >> 63) & 1) == 0 else -1.0
+            return idx, sign
+
+        # Unigrams
+        freqs = {}
+        for token in words:
+            if token:
+                freqs[token] = freqs.get(token, 0) + 1
+        for token, count in freqs.items():
+            idx, sign = _signed_hash(f"u:{token}")
+            vec[idx] += sign * np.log1p(count)
+
+        # Bigrams
+        for i in range(len(words) - 1):
+            bigram = f"{words[i]}_{words[i + 1]}"
+            idx, sign = _signed_hash(f"b:{bigram}")
+            vec[idx] += sign * 0.75
+
+        # Character trigrams (capped for bounded CPU time)
+        char_stream = re.sub(r"\s+", " ", combined)[:600]
+        for i in range(max(0, len(char_stream) - 2)):
+            trigram = char_stream[i:i + 3]
+            idx, sign = _signed_hash(f"c:{trigram}")
+            vec[idx] += sign * 0.15
+
+        # Robust normalization
+        norm = float(np.linalg.norm(vec))
+        if norm > 0.0:
             vec /= norm
 
-        # Add differential privacy noise (epsilon=0.1)
-        noise = np.random.normal(0, 0.05, 256).astype(np.float32)
-        vec = vec + noise
+        # Adaptive differential privacy noise (more text => less relative noise)
+        token_count = max(1, len(words))
+        sigma = max(0.02, min(0.06, 0.08 / np.sqrt(token_count)))
+        noise = np.random.default_rng().normal(0.0, sigma, dimension).astype(np.float32)
+        vec = np.clip(vec + noise, -1.0, 1.0)
 
         # Quantize to int8 (8x compression, ~256 bytes)
         vec_int8 = np.clip(vec * 127, -127, 127).astype(np.int8)

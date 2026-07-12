@@ -312,9 +312,40 @@ class MeshBrainApp:
 
     @staticmethod
     def _detect_language(text: str) -> str:
-        """Simple language detection (could use fasttext in production)"""
-        # For now return 'en' — in production use: langdetect or fasttext
-        return "en"
+        """Heuristic on-device language detection with no external dependency."""
+        sample = (text or "").lower().strip()
+        if not sample:
+            return "en"
+
+        # Script-level fast paths
+        if any('\u4e00' <= ch <= '\u9fff' for ch in sample):
+            return "zh"
+        if any('\u0600' <= ch <= '\u06ff' for ch in sample):
+            return "ar"
+        if any('\u0400' <= ch <= '\u04ff' for ch in sample):
+            return "ru"
+        if any('\u0900' <= ch <= '\u097f' for ch in sample):
+            return "hi"
+
+        # Lightweight lexical scoring for Latin-script languages
+        tokens = [t for t in sample.replace("?", " ").replace("!", " ").split() if t]
+        if not tokens:
+            return "en"
+
+        language_markers = {
+            "en": {"the", "is", "and", "what", "how", "why", "with"},
+            "es": {"el", "la", "que", "de", "cómo", "por", "para", "una"},
+            "fr": {"le", "la", "de", "et", "comment", "pour", "une", "est"},
+            "de": {"der", "die", "und", "wie", "warum", "ist", "mit", "ein"},
+        }
+
+        scores = {}
+        token_set = set(tokens)
+        for lang, markers in language_markers.items():
+            scores[lang] = len(token_set.intersection(markers))
+
+        best_lang = max(scores, key=scores.get)
+        return best_lang if scores[best_lang] > 0 else "en"
 
 
 # ── Demo mode — runs two nodes in one process ─────────────────────────
