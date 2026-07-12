@@ -105,7 +105,9 @@ dependencies {
 
     // ── Markdown rendering for chat ──────────────────────────────
     implementation 'io.noties.markwon:core:4.6.2'
-    implementation 'io.noties.markwon:syntax-highlight:4.6.2'
+    implementation('io.noties.markwon:syntax-highlight:4.6.2') {
+        exclude group: 'org.jetbrains', module: 'annotations-java5'
+    }
 
     // ── Testing ──────────────────────────────────────────────────
     testImplementation 'junit:junit:4.13.2'
