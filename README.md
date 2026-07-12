@@ -21,6 +21,7 @@ MeshBrain is a fully decentralized AI system where every phone runs its own loca
 | 🧠 **Local AI** | Gemma 2 2B, Llama 3.2, Mistral running on-device via Ollama / PocketPal |
 | 📡 **Auto-discovery** | Devices find each other on same WiFi via NSD/mDNS — no manual config |
 | 🔁 **Collective learning** | Every good interaction improves the whole network via federated NanoPackets |
+| 🧮 **Advanced vectorization** | Signed-hash unigram+bigram+char-trigram embeddings with adaptive DP noise |
 | 📱 **Mobile-first** | Android app (Jetpack Compose) + Python node for PC/Mac/Linux |
 
 ---
@@ -211,7 +212,7 @@ Private key never leaves the device.
 Every NanoPacket contains:
   ├── node_id       → sender's public key
   ├── topic_hash    → 8-byte SHA-256 fingerprint of topic (NOT reversible)
-  ├── knowledge     → 256-dim int8 embedding vector (NOT raw text)
+  ├── knowledge     → 256-dim int8 hashed n-gram embedding + adaptive DP noise (NOT raw text)
   ├── quality_score → 0.0–1.0 self-reported quality
   └── signature     → Ed25519(private_key, payload) — 64 bytes
 
