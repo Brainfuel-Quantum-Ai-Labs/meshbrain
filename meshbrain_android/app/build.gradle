@@ -53,6 +53,10 @@ android {
     }
 }
 
+configurations.configureEach {
+    exclude group: 'org.jetbrains', module: 'annotations-java5'
+}
+
 dependencies {
     // ── Jetpack Compose UI ──────────────────────────────────────
     def compose_bom = platform('androidx.compose:compose-bom:2024.02.00')
